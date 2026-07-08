@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quiz Inteligente con Revisión de Errores</title>
+    <style>
+        :root {
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --primary-color: #4f46e5;
+            --primary-hover: #4338ca;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin-top: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+            color: var(--primary-color);
+        }
+
+        .upload-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 25px;
+            border: 2px dashed var(--primary-color);
+            border-radius: 8px;
+            background: #f8fafc;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .upload-section p {
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        .file-input-label {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+
+        .file-input-label:hover {
+            background-color: var(--primary-hover);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .config-section {
+            background: #f1f5f9;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .config-section label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .config-section input {
+            width: 80px;
+            padding: 8px;
+            font-size: 1rem;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .start-btn {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .start-btn:hover {
+            background-color: #059669;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background-color: var(--border-color);
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        .stats-group {
+            display: flex;
+            gap: 15px;
+        }
+
+        .stat-badge {
+            background: #f1f5f9;
+            padding: 2px 8px;
+            border-radius: 4px;
+        }
+
+        .stat-badge.percentage {
+            background: #e0f2fe;
+            color: #0369a1;
+        }
+
+        .question-text {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .options-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background-color: var(--card-bg);
+            border: 2px solid var(--border-color);
+            padding: 14px 20px;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--primary-color);
+            background-color: #f5f3ff;
+        }
+
+        .option-btn:disabled {
+            cursor: not-allowed;
+        }
+
+        .option-btn.correct {
+            background-color: #d1fae5 !important;
+            border-color: var(--success-color) !important;
+            color: #065f46;
+        }
+
+        .option-btn.wrong {
+            background-color: #fee2e2 !important;
+            border-color: var(--error-color) !important;
+            color: #991b1b;
+        }
+
+        .feedback {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .feedback.correct-text { color: var(--success-color); }
+        .feedback.wrong-text { color: var(--error-color); }
+
+        .nav-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+
+        .next-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .next-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        /* Sección de Resultados y Errores */
+        .results-section {
+            text-align: center;
+            padding: 10px 0;
+        }
+
+        .score-circle {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: #f5f3ff;
+            border: 4px solid var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 20px auto;
+            color: var(--primary-color);
+        }
+
+        .errors-container {
+            margin-top: 30px;
+            text-align: left;
+            border-top: 2px solid var(--border-color);
+            padding-top: 20px;
+        }
+
+        .errors-title {
+            font-size: 1.2rem;
+            color: #475569;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .error-card {
+            background: #f8fafc;
+            border-left: 4px solid var(--error-color);
+            padding: 15px;
+            border-radius: 0 8px 8px 0;
+            margin-bottom: 15px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+
+        .error-card .err-question {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .error-card .err-answers {
+            font-size: 0.95rem;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .err-line {
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+        .err-line.user-wrong {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .err-line.correct-ans {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .restart-btn {
+            background-color: #475569;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 20px;
+            width: 100%;
+        }
+        
+        .restart-btn:hover { background-color: #334155; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🎓 Quiz Inteligente</h1>
+        
+        <div id="upload-container" class="upload-section">
+            <p>Sube uno o múltiples archivos <strong>.md</strong> o <strong>.txt</strong>.</p>
+            <label for="file-input" class="file-input-label">Seleccionar Archivos</label>
+            <input type="file" id="file-input" accept=".md,.txt" multiple>
+        </div>
+
+        <div id="config-container" class="config-section hidden">
+            <p id="config-summary">Se encontraron 0 preguntas en total.</p>
+            <label for="questions-limit">¿Cuántas preguntas deseas responder?</label>
+            <input type="number" id="questions-limit" min="1" value="10">
+            <button id="start-btn" class="start-btn">Comenzar Examen</button>
+        </div>
+
+        <div id="quiz-container" class="hidden">
+            <div class="progress-bar">
+                <div id="progress-fill" class="progress-fill"></div>
+            </div>
+            <div class="quiz-header">
+                <span id="question-counter">Pregunta 1</span>
+                <div class="stats-group">
+                    <span id="score-counter" class="stat-badge">Puntos: 0</span>
+                    <span id="accuracy-counter" class="stat-badge percentage">Aciertos: 0%</span>
+                </div>
+            </div>
+            <div id="question-text" class="question-text"></div>
+            <div id="options-list" class="options-list"></div>
+            <div id="feedback" class="feedback hidden"></div>
+            <div class="nav-actions">
+                <button id="next-btn" class="next-btn hidden">Siguiente Pregunta</button>
+            </div>
+        </div>
+
+        <div id="results-container" class="results-section hidden">
+            <h2>¡Examen Completado!</h2>
+            <div id="score-circle" class="score-circle">0/0</div>
+            <p id="results-text"></p>
+            
+            <div id="errors-review" class="errors-container hidden">
+                <div class="errors-title">🔍 Revisión de respuestas incorrectas:</div>
+                <div id="errors-list"></div>
+            </div>
+
+            <button id="restart-btn" class="restart-btn">Cargar otros exámenes</button>
+        </div>
+    </div>
+
+    <script>
+        let allParsedQuestions = []; 
+        let selectedQuestions = [];  
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let questionsAnsweredCount = 0; 
+        let answered = false;
+        
+        // Historial para guardar en cuáles se equivocó el usuario
+        let incorrectAnswersLog = []; 
+
+        const fileInput = document.getElementById('file-input');
+        const uploadContainer = document.getElementById('upload-container');
+        const configContainer = document.getElementById('config-container');
+        const quizContainer = document.getElementById('quiz-container');
+        const resultsContainer = document.getElementById('results-container');
+        
+        const configSummary = document.getElementById('config-summary');
+        const questionsLimitInput = document.getElementById('questions-limit');
+        const startBtn = document.getElementById('start-btn');
+        
+        const progressFill = document.getElementById('progress-fill');
+        const questionCounter = document.getElementById('question-counter');
+        const scoreCounter = document.getElementById('score-counter');
+        const accuracyCounter = document.getElementById('accuracy-counter');
+        const questionText = document.getElementById('question-text');
+        const optionsList = document.getElementById('options-list');
+        const feedback = document.getElementById('feedback');
+        const nextBtn = document.getElementById('next-btn');
+        
+        const scoreCircle = document.getElementById('score-circle');
+        const resultsText = document.getElementById('results-text');
+        const errorsReview = document.getElementById('errors-review');
+        const errorsList = document.getElementById('errors-list');
+        const restartBtn = document.getElementById('restart-btn');
+
+        fileInput.addEventListener('change', handleMultipleFilesUpload);
+        startBtn.addEventListener('click', prepareQuizSession);
+        nextBtn.addEventListener('click', handleNextQuestion);
+        restartBtn.addEventListener('click', resetQuiz);
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+
+        function handleMultipleFilesUpload(e) {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            allParsedQuestions = []; 
+            let filesRead = 0;
+
+            for (let i = 0; i < files.length; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+
+                reader.onload = function(evt) {
+                    const text = evt.target.result;
+                    parseAndAppendQuestions(text);
+                    
+                    filesRead++;
+                    if (filesRead === files.length) {
+                        showConfigStep();
+                    }
+                };
+                reader.readAsText(file);
+            }
+        }
+
+        function parseAndAppendQuestions(text) {
+            const blocks = text.split(/\n\s*\n/);
+
+            blocks.forEach(block => {
+                const lines = block.split('\n').map(line => line.trim()).filter(line => line.length > 0);
+                
+                if (lines.length > 0 && lines[0].startsWith('#')) {
+                    lines.shift();
+                }
+
+                if (lines.length < 3) return;
+
+                let pregunta = lines[0];
+                let opciones = [];
+                let respuestaCorrectaLetra = '';
+                let correctaIndex = -1;
+
+                for (let i = 1; i < lines.length; i++) {
+                    const line = lines[i];
+                    if (line.toUpperCase().startsWith('RESPUESTA:')) {
+                        respuestaCorrectaLetra = line.split(':')[1].trim().toUpperCase();
+                    } else if (/^[A-D]\)/i.test(line) || /^[A-D]\./i.test(line)) {
+                        const opcionTexto = line.substring(2).trim();
+                        opciones.push(opcionTexto);
+                    }
+                }
+
+                if (respuestaCorrectaLetra) {
+                    correctaIndex = respuestaCorrectaLetra.charCodeAt(0) - 65; 
+                }
+
+                if (pregunta && opciones.length > 0 && correctaIndex >= 0 && correctaIndex < opciones.length) {
+                    allParsedQuestions.push({
+                        pregunta: pregunta,
+                        opciones: opciones,
+                        correcta: correctaIndex
+                    });
+                }
+            });
+        }
+
+        function showConfigStep() {
+            if (allParsedQuestions.length === 0) {
+                alert("No se detectaron preguntas válidas. Revisa el formato de tus archivos.");
+                return;
+            }
+            uploadContainer.classList.add('hidden');
+            configContainer.classList.remove('hidden');
+            configSummary.innerHTML = `📚 Se cargaron con éxito un total de <strong>${allParsedQuestions.length}</strong> preguntas combinadas.`;
+            
+            questionsLimitInput.value = Math.min(20, allParsedQuestions.length);
+            questionsLimitInput.max = allParsedQuestions.length;
+        }
+
+        function prepareQuizSession() {
+            let limit = parseInt(questionsLimitInput.value);
+            
+            if (isNaN(limit) || limit < 1) {
+                alert("Por favor introduce un número válido de preguntas.");
+                return;
+            }
+            
+            if (limit > allParsedQuestions.length) {
+                limit = allParsedQuestions.length;
+            }
+
+            shuffleArray(allParsedQuestions);
+            selectedQuestions = allParsedQuestions.slice(0, limit);
+
+            configContainer.classList.add('hidden');
+            quizContainer.classList.remove('hidden');
+            
+            currentQuestionIndex = 0;
+            score = 0;
+            questionsAnsweredCount = 0;
+            incorrectAnswersLog = []; // Vaciar el log de errores
+            
+            showQuestion();
+        }
+
+        function showQuestion() {
+            answered = false;
+            feedback.classList.add('hidden');
+            nextBtn.classList.add('hidden');
+            optionsList.innerHTML = '';
+
+            const currentQuestion = selectedQuestions[currentQuestionIndex];
+            
+            questionText.textContent = currentQuestion.pregunta;
+            questionCounter.textContent = `Pregunta ${currentQuestionIndex + 1} de ${selectedQuestions.length}`;
+            scoreCounter.textContent = `Puntos: ${score}`;
+            
+            if(questionsAnsweredCount === 0) {
+                accuracyCounter.textContent = `Aciertos: 0%`;
+            } else {
+                const currentPercentage = Math.round((score / questionsAnsweredCount) * 100);
+                accuracyCounter.textContent = `Aciertos: ${currentPercentage}%`;
+            }
+            
+            const progressPercent = ((currentQuestionIndex) / selectedQuestions.length) * 100;
+            progressFill.style.width = `${progressPercent}%`;
+
+            currentQuestion.opciones.forEach((opcion, index) => {
+                const button = document.createElement('button');
+                button.classList.add('option-btn');
+                const letra = String.fromCharCode(65 + index);
+                button.textContent = `${letra}) ${opcion}`;
+                button.addEventListener('click', () => selectOption(index, button));
+                optionsList.appendChild(button);
+            });
+        }
+
+        function selectOption(selectedIndex, selectedButton) {
+            if (answered) return;
+            answered = true;
+            questionsAnsweredCount++;
+
+            const currentQuestion = selectedQuestions[currentQuestionIndex];
+            const correctIndex = currentQuestion.correcta;
+            const buttons = optionsList.querySelectorAll('.option-btn');
+
+            buttons.forEach(btn => btn.disabled = true);
+
+            const letraCorrecta = String.fromCharCode(65 + correctIndex);
+
+            if (selectedIndex === correctIndex) {
+                selectedButton.classList.add('correct');
+                feedback.textContent = "✨ ¡Correcto!";
+                feedback.className = "feedback correct-text";
+                score++;
+            } else {
+                selectedButton.classList.add('wrong');
+                buttons[correctIndex].classList.add('correct');
+                feedback.textContent = `❌ Incorrecto. La respuesta correcta era la ${letraCorrecta}) ${currentQuestion.opciones[correctIndex]}`;
+                feedback.className = "feedback wrong-text";
+
+                // NUEVO: Si falla, guardamos la pregunta y las respuestas para la revisión final
+                incorrectAnswersLog.push({
+                    pregunta: currentQuestion.pregunta,
+                    opcionUsuario: `${String.fromCharCode(65 + selectedIndex)}) ${currentQuestion.opciones[selectedIndex]}`,
+                    opcionCorrecta: `${letraCorrecta}) ${currentQuestion.opciones[correctIndex]}`
+                });
+            }
+
+            scoreCounter.textContent = `Puntos: ${score}`;
+            const livePercentage = Math.round((score / questionsAnsweredCount) * 100);
+            accuracyCounter.textContent = `Aciertos: ${livePercentage}%`;
+
+            feedback.classList.remove('hidden');
+            nextBtn.classList.remove('hidden');
+            
+            if (currentQuestionIndex === selectedQuestions.length - 1) {
+                nextBtn.textContent = "Ver Resultados";
+            } else {
+                nextBtn.textContent = "Siguiente Pregunta";
+            }
+        }
+
+        function handleNextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < selectedQuestions.length) {
+                showQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            quizContainer.classList.add('hidden');
+            resultsContainer.classList.remove('hidden');
+            progressFill.style.width = '100%';
+
+            scoreCircle.textContent = `${score}/${selectedQuestions.length}`;
+            const porcentajeFinal = Math.round((score / selectedQuestions.length) * 100);
+            
+            let mensaje = '';
+            if (porcentajeFinal === 100) mensaje = "¡Perfecto! Dominas este tema al 100%.";
+            else if (porcentajeFinal >= 80) mensaje = "¡Excelente trabajo! Vas por muy buen camino.";
+            else if (porcentajeFinal >= 60) mensaje = "Aprobado, pero te vendría bien repasar un poco más.";
+            else mensaje = "Sigue estudiando. ¡La perseverancia hace al maestro!";
+
+            resultsText.innerHTML = `Has respondido correctamente <strong>${score}</strong> de <strong>${selectedQuestions.length}</strong> preguntas (${porcentajeFinal}% de efectividad).<br><br>${mensaje}`;
+
+            // NUEVO: Renderizar la lista de errores si es que existen
+            errorsList.innerHTML = ''; // Limpiar lista previa
+            if (incorrectAnswersLog.length > 0) {
+                errorsReview.classList.remove('hidden');
+                
+                incorrectAnswersLog.forEach(item => {
+                    const card = document.createElement('div');
+                    card.classList.add('error-card');
+                    card.innerHTML = `
+                        <div class="err-question">${item.pregunta}</div>
+                        <div class="err-answers">
+                            <div class="err-line user-wrong">Tu respuesta: ${item.opcionUsuario}</div>
+                            <div class="err-line correct-ans">Respuesta correcta: ${item.opcionCorrecta}</div>
+                        </div>
+                    `;
+                    errorsList.appendChild(card);
+                });
+            } else {
+                errorsReview.classList.add('hidden');
+            }
+        }
+
+        function resetQuiz() {
+            fileInput.value = '';
+            allParsedQuestions = [];
+            selectedQuestions = [];
+            incorrectAnswersLog = [];
+            resultsContainer.classList.add('hidden');
+            configContainer.classList.add('hidden');
+            uploadContainer.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
